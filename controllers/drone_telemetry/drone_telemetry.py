@@ -26,6 +26,8 @@ def main():
     gyro = robot.getDevice("gyro")
     acceleration.enable(timestep)
     gyro.enable(timestep)
+    camera = robot.getDevice("front_camera")
+    camera.enable(34)  # Closest 2 ms simulation-step multiple to 30 Hz.
     motors = [robot.getDevice(name) for name in MOTOR_NAMES]
     for motor in motors:
         motor.setPosition(float("inf"))

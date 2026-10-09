@@ -214,8 +214,20 @@ result = json.loads(supervisor.getFromDef('DRONE').getField('customData').getSFS
 
 Pressure is computed from Supervisor altitude with no bias/noise, using the
 standard atmosphere below 11 km. The only physical sensor devices are the
-accelerometer and gyro. Simulation ground truth feeds the outer position
-controller separately from sensor feedback.
+accelerometer and gyro, plus a front camera for viewing. Simulation ground truth
+feeds the outer position controller separately from sensor feedback.
+
+## Front camera
+
+The `front_camera` device sits at the nose and looks along the drone's forward
+body +X axis. It provides 320×240 RGB images at approximately 30 Hz (34 ms
+sampling period, about 29.4 Hz with the 2 ms physics timestep), with a 90-degree
+horizontal field of view. Launch either flight mode or the telemetry world and view its
+camera overlay in Webots. Restart the simulation to load the added device.
+Controller code can read frames with `camera.getImage()` after a simulation
+step. Camera images stay in Webots and are not sent to Betaflight.
+See the [Webots Camera reference](https://www.cyberbotics.com/doc/reference/camera)
+for the device API and display options.
 
 ## Checks and limits
 

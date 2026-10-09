@@ -140,6 +140,14 @@ PROTO Iris [
       }
       Gyro {
       }
+      Camera {
+        translation 0.25 0 0.02
+        name "front_camera"
+        fieldOfView 1.5708
+        width 320
+        height 240
+        near 0.01
+      }
     ]
     boundingObject Box {
        size 0.470000 0.470000 0.110000
