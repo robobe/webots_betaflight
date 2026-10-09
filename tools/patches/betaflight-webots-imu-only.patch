@@ -1,0 +1,48 @@
+diff --git a/src/platform/SIMULATOR/target/SITL/target.h b/src/platform/SIMULATOR/target/SITL/target.h
+--- a/src/platform/SIMULATOR/target/SITL/target.h
++++ b/src/platform/SIMULATOR/target/SITL/target.h
+@@ -267,3 +267,14 @@
+ #ifdef CONFIG_IN_FILE
+ const char *targetGetConfigFile(void);
+ #endif
++
++#if defined(SITL_WEBOTS_IMU_ONLY)
++#if !defined(USE_IMU_CALC) || defined(SITL_ATTITUDE_DIRECT)
++#error "Webots IMU-only SITL requires the real attitude estimator"
++#endif
++#undef USE_MAG
++#undef USE_VIRTUAL_MAG
++#undef USE_VIRTUAL_GPS
++#undef DEFAULT_FEATURES
++#define DEFAULT_FEATURES FEATURE_TELEMETRY
++#endif
+diff --git a/src/platform/SIMULATOR/sitl.c b/src/platform/SIMULATOR/sitl.c
+--- a/src/platform/SIMULATOR/sitl.c
++++ b/src/platform/SIMULATOR/sitl.c
+@@ -244,6 +244,9 @@
+     }
+ #endif
+ 
++#if defined(SITL_WEBOTS_IMU_ONLY)
++    printf("[SITL] Webots: IMU estimator, external barometer, no virtual MAG/GPS\n");
++#endif
+     printf("[SITL] The SITL will output to IP %s:%d (Gazebo) and %s:%d (RealFlightBridge)\n",
+            simulator_ip, PORT_PWM, simulator_ip, PORT_PWM_RAW);
+     return 0;
+@@ -321,6 +324,7 @@
+     // Legacy bridges (X-Plane, RealFlight) supply pressure directly in fdm_packet
+     virtualBaroSet((int32_t)pkt->pressure, 2500);
+ #endif
++#if defined(USE_VIRTUAL_MAG) || !defined(USE_IMU_CALC)
+     // Reconstruct the body-to-world (NWU) attitude quaternion from the packet.
+     // Consumed by the direct-attitude path and by the virtual mag feed, which
+     // must use the same rotation or mag fusion fights the fed attitude.
+@@ -349,6 +353,8 @@
+     const float attQz = pkt->imu_orientation_quat[3];
+ #endif
+ 
++#endif
++
+ #if defined(USE_VIRTUAL_MAG)
+     {
+         // Synthetic earth field, NWU, 4096 counts: 60° inclination and 2° east

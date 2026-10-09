@@ -1,0 +1,52 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "../protos/Iris.proto"
+
+WorldInfo {
+  title "Iris IMU and barometer"
+  basicTimeStep 2
+  coordinateSystem "ENU"
+}
+Viewpoint {
+  orientation 0.15554153350599548 -0.8879632385984604 -0.4328141844398555 -0.7691297910376642
+  position -2.719806534182175 -0.9451744343683601 2.1727182111093915
+}
+Background {
+  skyColor [
+    0.55 0.75 0.95
+  ]
+}
+DirectionalLight {
+  direction -0.4 -0.5 -1
+  intensity 2
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.65 0.68 0.65
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 20 20 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 20 20 0.1
+  }
+}
+DEF DRONE Iris {
+  translation 0 0 0.09
+  controller "drone_telemetry"
+  supervisor TRUE
+}
+DEF MCP_BRIDGE Robot {
+  translation 0 0 -10
+  name "mcp_bridge"
+  controller "mcp_bridge"
+  supervisor TRUE
+}

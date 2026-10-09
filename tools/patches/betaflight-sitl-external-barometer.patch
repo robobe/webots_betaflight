@@ -1,0 +1,41 @@
+diff --git a/src/platform/SIMULATOR/sitl.c b/src/platform/SIMULATOR/sitl.c
+--- a/src/platform/SIMULATOR/sitl.c
++++ b/src/platform/SIMULATOR/sitl.c
+@@ -114,6 +114,7 @@ static bool gpxEnabled = false;
+ static bool gpxHeaderWritten = false;
+ static bool gpxEnabled = false;
+ 
++#if !defined(SITL_EXTERNAL_BAROMETER)
+ #if ENABLE_FLIGHT_PLAN
+ static const char *gpxWaypointTypeName(uint8_t type)
+ {
+@@ -182,6 +183,7 @@ static void gpxTrackWrite(double lat, double lon, double altM)
+         lat, lon, altM, iso);
+     fflush(gpxTrackFile);
+ }
++#endif
+ 
+ static void gpxTrackClose(void)
+ {
+@@ -311,7 +311,11 @@ static void updateState(const fdm_packet* pkt)
+     y = constrain(gyroPitch * GYRO_SCALE * RAD2DEG, -32767, 32767);
+     z = constrain(gyroYaw   * GYRO_SCALE * RAD2DEG, -32767, 32767);
+     virtualGyroSet(virtualGyroDev, x, y, z);
+-#if ENABLE_GAZEBO_BRIDGE
++#if defined(SITL_EXTERNAL_BAROMETER)
++    // Course bridge sends sensor pressure; position/velocity slots are reserved.
++    // Preserve Gazebo IMU conventions while using the actual barometer sample.
++    virtualBaroSet((int32_t)pkt->pressure, 2500);
++#elif ENABLE_GAZEBO_BRIDGE
+     // Gazebo plugin doesn't fill pkt->pressure; derive from altitude using the
+     // standard atmosphere model: P = 101325 * (1 - 2.25577e-5 * h)^5.25588
+     const double altMeters = pkt->position_xyz[2];
+@@ -407,7 +411,7 @@ static void updateState(const fdm_packet* pkt)
+ #endif
+ #endif
+ 
+-#if defined(USE_VIRTUAL_GPS)
++#if defined(USE_VIRTUAL_GPS) && !defined(SITL_EXTERNAL_BAROMETER)
+     const double longitude = pkt->position_xyz[0];
+     const double latitude = pkt->position_xyz[1];
+     const double altitude = pkt->position_xyz[2];

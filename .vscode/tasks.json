@@ -1,0 +1,139 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Webots: Launch drone world",
+      "type": "process",
+      "command": "webots",
+      "args": [
+        "--batch",
+        "--mode=realtime",
+        "--stdout",
+        "--stderr",
+        "${workspaceFolder}/worlds/drone.wbt"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "WEBOTS_EXTRA_PROJECT_PATH": "/home/user/mcps/webotMCP",
+          "WEBOTS_BETAFLIGHT_SITL": "0"
+        }
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Betaflight: Build SITL",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "${workspaceFolder}/tools/sitl.py",
+        "build"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Betaflight: Provision new runtime",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "${workspaceFolder}/tools/sitl.py",
+        "provision"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Betaflight: Run SITL",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "${workspaceFolder}/tools/sitl.py",
+        "run"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Simulation: Launch Webots + Betaflight",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "${workspaceFolder}/tools/sitl.py",
+        "launch"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Webots: Launch SITL world",
+      "type": "process",
+      "command": "webots",
+      "args": [
+        "--batch",
+        "--mode=realtime",
+        "--stdout",
+        "--stderr",
+        "${workspaceFolder}/worlds/drone.wbt"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "WEBOTS_EXTRA_PROJECT_PATH": "/home/user/mcps/webotMCP",
+          "WEBOTS_BETAFLIGHT_SITL": "1"
+        }
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    }
+  ]
+}
