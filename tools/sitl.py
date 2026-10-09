@@ -86,7 +86,7 @@ def require_runtime():
         raise RuntimeError("Missing runtime EEPROM. Run: python3 tools/sitl.py provision")
 
 
-def launch():
+def launch(auto_takeoff=False):
     require_runtime()
     free_ports(include_webots=True)
     children = []
@@ -95,6 +95,7 @@ def launch():
                                           start_new_session=True))
         env = os.environ.copy()
         env.update(WEBOTS_BETAFLIGHT_SITL="1", WEBOTS_EXTRA_PROJECT_PATH="/home/user/mcps/webotMCP")
+        env['WEBOTS_AUTO_TAKEOFF'] = '1' if auto_takeoff else '0'
         children.append(subprocess.Popen(["webots", "--batch", "--mode=realtime", "--stdout", "--stderr",
                                           str(ROOT / "worlds/drone.wbt")], cwd=ROOT, env=env,
                                          start_new_session=True))

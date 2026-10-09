@@ -134,6 +134,25 @@
       "runOptions": {
         "instanceLimit": 1
       }
+    },
+    {
+      "label": "Simulation: Auto takeoff to 3 m",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "${workspaceFolder}/tools/takeoff.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
     }
   ]
 }

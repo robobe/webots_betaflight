@@ -1,0 +1,46 @@
+diff --git a/src/platform/SIMULATOR/sitl.c b/src/platform/SIMULATOR/sitl.c
+--- a/src/platform/SIMULATOR/sitl.c
++++ b/src/platform/SIMULATOR/sitl.c
+@@ -483,7 +483,9 @@
+ //        simRate = simRate * 0.5 + (1e6 * deltaSim / (realtime_now - last_realtime)) * 0.5;
+         struct timespec out_ts;
+         timeval_sub(&out_ts, &now_ts, &last_ts);
++#if !defined(SITL_WEBOTS_IMU_ONLY)
+         simRate = deltaSim / (out_ts.tv_sec + 1e-9*out_ts.tv_nsec);
++#endif
+     }
+ //    printf("simRate = %lf, millis64 = %lu, millis64_real = %lu, deltaSim = %lf\n", simRate, millis64(), millis64_real(), deltaSim*1e6);
+ 
+@@ -705,6 +707,9 @@
+ 
+ uint64_t micros64(void)
+ {
++#if defined(SITL_WEBOTS_IMU_ONLY)
++    return micros64_real();
++#else
+     static uint64_t last = 0;
+     static uint64_t out = 0;
+     uint64_t now = nanos64_real();
+@@ -713,10 +718,14 @@
+     last = now;
+ 
+     return out / 1000;
++#endif
+ }
+ 
+ uint64_t millis64(void)
+ {
++#if defined(SITL_WEBOTS_IMU_ONLY)
++    return millis64_real();
++#else
+     static uint64_t last = 0;
+     static uint64_t out = 0;
+     uint64_t now = nanos64_real();
+@@ -725,6 +734,7 @@
+     last = now;
+ 
+     return out / (1000 * 1000);
++#endif
+ }
+ 
+ uint32_t micros(void)

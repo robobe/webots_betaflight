@@ -6,6 +6,8 @@ Adapted from the learning repository's Module 08 protocol/client implementation.
 import math
 import socket
 import struct
+import threading
+import time
 
 FDM = struct.Struct("<18d")
 RC = struct.Struct("<d16H")
@@ -52,20 +54,49 @@ class BetaflightBridge:
             raise
         self.received_at = None
         self.motors = (0.0,) * 4
+        self.last_poll = None
+        self.rc_frame = None
+        self.rc_stop = threading.Event()
+        self.rc_thread = None
 
     def send_sensors(self, timestamp, gyro, acceleration, pressure):
         self.socket.sendto(pack_sensors(timestamp, gyro, acceleration, pressure), ("127.0.0.1", 9003))
 
     def send_rc(self, timestamp, channels):
-        self.socket.sendto(pack_rc(timestamp, channels), ("127.0.0.1", 9004))
+        packet = pack_rc(timestamp, channels)
+        self.rc_frame = (packet, time.monotonic())
+        if self.rc_thread is None or channels[4] == 1000:
+            self.socket.sendto(packet, ("127.0.0.1", 9004))
+
+    def start_rc(self):
+        # GUI/physics scheduling must not interrupt the receiver heartbeat.
+        def run():
+            while not self.rc_stop.is_set():
+                self.socket.sendto(self.rc_packet(time.monotonic()), ('127.0.0.1', 9004))
+                self.rc_stop.wait(0.02)
+        self.rc_thread = threading.Thread(target=run, daemon=True)
+        self.rc_thread.start()
+
+    def rc_packet(self, now):
+        frame = self.rc_frame
+        if frame and now - frame[1] <= TIMEOUT_S:
+            return frame[0]
+        return pack_rc(0, [1500, 1500, 1000, 1500, 1000, 2000] + [1000] * 10)
 
     def read_motors(self, now):
+        stalled = self.last_poll is not None and now - self.last_poll > TIMEOUT_S
+        self.last_poll = now
+        if stalled:
+            self.received_at = None
+            self.motors = (0.0,) * 4
         for _ in range(64):
             try:
                 packet, address = self.socket.recvfrom(4096)
             except BlockingIOError:
                 break
             if address[0] != "127.0.0.1":
+                continue
+            if stalled:
                 continue
             try:
                 motors = unpack_motors(packet)
@@ -77,6 +108,9 @@ class BetaflightBridge:
         return (self.motors if age is not None and age <= TIMEOUT_S else (0.0,) * 4), age
 
     def close(self):
+        self.rc_stop.set()
+        if self.rc_thread is not None:
+            self.rc_thread.join(timeout=1)
         self.socket.close()
 
 
@@ -93,7 +127,7 @@ class KeyboardPilot:
         self.throttle = 0.0
         self.channels[2] = self.channels[4] = 1000
 
-    def update(self, keys, now, connected):
+    def update(self, keys, now, connected, ready=True):
         if not connected:
             self.stable_since = None
             self.disarm()
@@ -102,7 +136,7 @@ class KeyboardPilot:
         if "SPACE" in keys:
             self.disarm()
         elif ("R" in keys and "R" not in self.previous_keys and connected
-              and now - self.stable_since >= 2 and self.throttle == 0):
+              and now - self.stable_since >= 2 and self.throttle == 0 and ready):
             self.armed = True
         if self.armed:
             self.throttle = max(0.0, min(1.0, self.throttle + 0.01 * (("W" in keys) - ("S" in keys))))
@@ -115,3 +149,60 @@ class KeyboardPilot:
         ] + [1000] * 10
         self.previous_keys = set(keys)
         return self.channels
+
+
+def decode_status(payload):
+    if len(payload) < 21:
+        raise ValueError("Truncated MSP_STATUS")
+    extra = payload[15] & 15
+    if len(payload) < 21 + extra:
+        raise ValueError("Truncated arming flags")
+    return bool(struct.unpack_from('<I', payload, 6)[0] & 1), struct.unpack_from('<I', payload, 17 + extra)[0]
+
+
+class StatusMonitor:
+    """Poll read-only MSP_STATUS away from the physics/RC loop."""
+
+    def __init__(self):
+        self.latest = None
+        self.stop = threading.Event()
+        self.thread = threading.Thread(target=self._run, daemon=True)
+        self.thread.start()
+
+    def _run(self):
+        def receive(sock, count):
+            result = b''
+            while len(result) < count:
+                data = sock.recv(count - len(result))
+                if not data:
+                    raise ConnectionError("MSP connection closed")
+                result += data
+            return result
+
+        while not self.stop.is_set():
+            try:
+                with socket.create_connection(('127.0.0.1', 5761), timeout=0.2) as sock:
+                    while not self.stop.is_set():
+                        sock.sendall(b'$M<' + bytes((0, 101, 101)))
+                        header = receive(sock, 5)
+                        if header[:3] != b'$M>' or header[4] != 101:
+                            raise ValueError("Unexpected MSP response")
+                        data = receive(sock, header[3] + 1)
+                        checksum = header[3] ^ header[4]
+                        for value in data[:-1]:
+                            checksum ^= value
+                        if checksum != data[-1]:
+                            raise ValueError("Invalid MSP checksum")
+                        armed, flags = decode_status(data[:-1])
+                        self.latest = (armed, flags, time.monotonic())
+                        self.stop.wait(0.1)
+            except (OSError, ValueError):
+                self.stop.wait(0.2)
+
+    def state(self, now):
+        latest = self.latest
+        return latest if latest is not None and now - latest[2] < 0.5 else None
+
+    def close(self):
+        self.stop.set()
+        self.thread.join(timeout=1)
