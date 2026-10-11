@@ -5,6 +5,24 @@ attitude/rate controller and mixer; the Webots controller supplies IMU and
 barometer measurements, sends keyboard RC commands, and applies motor outputs.
 The original telemetry-only mode remains available.
 
+## Countryside world
+
+`worlds/drone.wbt` now uses a local copy of the Webots R2025a Mavic 2 Pro
+countryside environment: a textured landscape, road, manor, windmills, trees,
+forest, car and cardboard obstacle. The flying drone is still the Iris with
+the existing Betaflight bridge and front camera. It starts facing the village.
+The usual launch commands and VS Code tasks open this world.
+
+All required environment and Mavic model assets are stored in
+[`protos/vendor/webots`](protos/vendor/webots/README.md), including their license
+headers and provenance manifest. Restart Webots and SITL together to load the
+new scene. Keyboard position targets remain limited to ±10 m in XY; the outer
+controller does not avoid obstacles automatically.
+
+An optional local Mavic model is available alongside Iris; see the vendor README
+for an insertion example and its compatibility limits. The environment comes
+from the [Webots Mavic demo](https://github.com/cyberbotics/webots/blob/R2025a/projects/robots/dji/mavic/worlds/mavic_2_pro.wbt).
+
 ## Quick start
 
 Run commands from the project root. For a new checkout, build and configure the
